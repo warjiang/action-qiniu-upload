@@ -3,13 +3,16 @@ import path from 'path';
 import glob from 'glob';
 import pAll from 'p-all';
 import pRetry from 'p-retry';
+import {genToken} from './token';
 
 function normalizePath(input: string): string {
   return input.replace(/^\//, '');
 }
 
 export function upload(
-  token: string,
+  ak:string,
+  sk:string,
+  bucket:string,
   srcDir: string,
   destDir: string,
   ignoreSourceMap: boolean,
@@ -31,6 +34,7 @@ export function upload(
 
     const task = (): Promise<any> => new Promise((resolve, reject) => {
       const putExtra = new qiniu.form_up.PutExtra();
+      const token = genToken(bucket, ak, sk, key);
       uploader.putFile(token, key, file, putExtra, (err, body, info) => {
         if (err) return reject(new Error(`Upload failed: ${file}`));
 

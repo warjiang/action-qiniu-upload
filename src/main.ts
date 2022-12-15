@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import { genToken } from './token';
+// import { genToken } from './token';
 import { upload } from './upload';
 
 async function run(): Promise<void> {
@@ -10,11 +10,10 @@ async function run(): Promise<void> {
     const sourceDir = core.getInput('source_dir');
     const destDir = core.getInput('dest_dir');
     const ignoreSourceMap = core.getInput('ignore_source_map') === 'true';
-
-    const token = genToken(bucket, ak, sk);
+    // const token = genToken(bucket, ak, sk);
 
     upload(
-      token,
+      ak,sk, bucket,
       sourceDir,
       destDir,
       ignoreSourceMap,
