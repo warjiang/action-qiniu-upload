@@ -45865,14 +45865,21 @@ const token_1 = __webpack_require__(871);
 function normalizePath(input) {
     return input.replace(/^\//, '');
 }
+const cdnDomain = 'https://savemoney.spotty.com.cn';
 function upload(ak, sk, bucket, srcDir, destDir, ignoreSourceMap, onProgress, onComplete, onFail) {
     const baseDir = path_1.default.resolve(process.cwd(), srcDir);
     const files = glob_1.default.sync(`${baseDir}/**/*`, { nodir: true });
     const config = new qiniu_1.default.conf.Config();
     const uploader = new qiniu_1.default.form_up.FormUploader(config);
+    const mac = new qiniu_1.default.auth.digest.Mac(ak, sk);
+    const cdnManager = new qiniu_1.default.cdn.CdnManager(mac);
+    const bucketManager = new qiniu_1.default.rs.BucketManager(mac, config);
+    const urlsToRefresh = [];
     const tasks = files.map((file) => {
         const relativePath = path_1.default.relative(baseDir, path_1.default.dirname(file));
         const key = normalizePath(path_1.default.join(destDir, relativePath, path_1.default.basename(file)));
+        const _url = bucketManager.publicDownloadUrl(cdnDomain, key);
+        urlsToRefresh.push(_url);
         if (ignoreSourceMap && file.endsWith('.map'))
             return null;
         const task = () => new Promise((resolve, reject) => {
@@ -45891,7 +45898,12 @@ function upload(ak, sk, bucket, srcDir, destDir, ignoreSourceMap, onProgress, on
         return () => p_retry_1.default(task, { retries: 3 });
     }).filter((item) => !!item);
     p_all_1.default(tasks, { concurrency: 5 })
-        .then(onComplete)
+        .then(() => {
+        console.log('refresh urls', JSON.stringify(urlsToRefresh));
+        cdnManager.refreshUrls(urlsToRefresh, () => {
+            onComplete();
+        });
+    })
         .catch(onFail);
 }
 exports.upload = upload;
